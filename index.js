@@ -7,15 +7,15 @@ app.use(express.json());
 app.use(cors());
 
 //importante o modulo de mysql
-var mysql = require('mysql');
+var mysql = require('mysql2');
 
 //criando a variável conn que vai ter a referência de conexão
 //com o banco de dados
 var conn = mysql.createConnection({
     host: "localhost",
     user: "root",
-    password: "123456",
-    database: "aula",
+    password: "",
+    database: "mysql",
     port:"3306"
 });
 
@@ -35,7 +35,7 @@ app.get('/api/usuario', function (req, res) {
     //se deu algum erro a variável err terá o erro obtivo
     //caso contrário o result terá dos dados do banco 
     conn.query(sql, function (err, result) {
-        if (err) throw err;
+        if (err) res.status(500).json(err);
         res.status(200).json(result);
     });
 });
