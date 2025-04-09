@@ -15,7 +15,7 @@ var conn = mysql.createConnection({
     host: "localhost",
     user: "root",
     password: "",
-    database: "mysql",
+    database: "phpmyadmin",
     port:"3306"
 });
 
@@ -28,7 +28,7 @@ conn.connect(function (err) {
 
 app.get('/api/usuario', function (req, res) {
     //cria a string the consulta no baco do tipo select
-    let sql = "SELECT u.id, u.email, u.status FROM usuario u";
+    let sql = "SELECT u.id, u.nome FROM usuario u";
     //executando o comando sql com a função query
     //nela passamos a string de consulta
     //após a execução ele retorna o function que vai ter a variável err e result
@@ -48,12 +48,11 @@ app.post('/api/usuario', function (req, res) {
     var sql = '';
     //valido se o usuário existe pelo id -> caso exista é um update    
     if (usuario.id) {
-        sql = `UPDATE usuario SET email = '${usuario.email}', 
-        senha = '${usuario.senha}', status = '${usuario.status ? 1 : 0}' 
+        sql = `UPDATE usuario SET nome = '${usuario.nome}'
         WHERE id = ${usuario.id}`; 
     } else {
-        sql = `INSERT INTO usuario (email, senha, status) VALUES 
-    ('${usuario.email}', '${usuario.senha}','${usuario.status ? 1 : 0}')`;
+        sql = `INSERT INTO usuario (nome) VALUES 
+    ('${usuario.nome}')`;
     }
     //executa o comando de insert ou update
     conn.query(sql, function (err, result) {
@@ -64,9 +63,11 @@ app.post('/api/usuario', function (req, res) {
 
 //endpoint para capturar um usuário por id
 app.get('/api/usuario/:id', (req, res) => {
-    const id = req.param("id");
+    const { id } = req.params;
 
-    let sql = `SELECT u.id, u.email, u.status FROM usuario u WHERE u.id = ${id}`;
+    console.log(id)
+
+    let sql = `SELECT u.id, u.nome FROM usuario u WHERE u.id = ${id}`;
     conn.query(sql, function (err, result) {
         if (err) throw err;
         console.log(result)
