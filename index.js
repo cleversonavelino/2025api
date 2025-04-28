@@ -1,7 +1,10 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const app = express();
 const PORT = 8080;
+
+require('dotenv').config();
 
 app.use(express.json());
 app.use(cors());
@@ -16,7 +19,7 @@ var conn = mysql.createConnection({
     user: "root",
     password: "",
     database: "phpmyadmin",
-    port:"3306"
+    port: "3306"
 });
 
 //tentando connectar
@@ -26,7 +29,53 @@ conn.connect(function (err) {
     console.log("Connected!");
 });
 
-app.get('/api/usuario', function (req, res) {
+const generateToken = (id, email) => {
+    return jwt.sign({ id: id, email: email }, 'meusegredoabc', {
+        expiresIn: '1h'
+    });
+};
+
+const verifyToken = (token) => {
+    return jwt.verify(token, 'meusegredoabc');
+};
+
+app.post('/api/login', function (req, res) {
+    let usuario = req.body;
+    let sql = "SELECT u.id, u.senha FROM usuario u where u.email = ${usuario.email}";
+
+    conn.query(sql, function (err, result) {
+        if (err) throw err; 
+        usuario.id = result[0].id;
+        usuario.senha = result[0].senha;       
+    });
+
+    //TODO validar se encontrou o usuário
+    //if (!usuario.id) {
+    // res.status(401).send("login inválido")
+    //}
+
+    //TODO validar senha
+    token = generateToken(usuario.id, usuario.email);
+    res.json({token: token});
+});
+
+function authenticate(req, res, next) {
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Token não fornecido' });
+    }
+    
+    try {
+      const decoded = verifyToken(token);
+      req.userId = decoded.id;
+      next();
+    } catch (err) {
+      res.status(401).json({ error: 'Token inválido' });
+    }
+  }
+
+app.get('/api/usuario', authenticate, function (req, res) {
     //cria a string the consulta no baco do tipo select
     let sql = "SELECT u.id, u.nome FROM usuario u";
     //executando o comando sql com a função query
@@ -49,7 +98,7 @@ app.post('/api/usuario', function (req, res) {
     //valido se o usuário existe pelo id -> caso exista é um update    
     if (usuario.id) {
         sql = `UPDATE usuario SET nome = '${usuario.nome}'
-        WHERE id = ${usuario.id}`; 
+        WHERE id = ${usuario.id}`;
     } else {
         sql = `INSERT INTO usuario (nome) VALUES 
     ('${usuario.nome}')`;
