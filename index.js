@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const app = express();
 const PORT = 8080;
 
-require('dotenv').config();
+//require('dotenv').config();
 
 app.use(express.json());
 app.use(cors());
@@ -15,7 +15,7 @@ var mysql = require('mysql2');
 //criando a variável conn que vai ter a referência de conexão
 //com o banco de dados
 var conn = mysql.createConnection({
-    host: "localhost",
+    host: "127.0.0.1",
     user: "root",
     password: "",
     database: "phpmyadmin",
@@ -55,18 +55,24 @@ app.post('/api/login', function (req, res) {
     //}
 
     //TODO validar senha
+
+    //gerando o token
     token = generateToken(usuario.id, usuario.email);
     res.json({token: token});
 });
 
 function authenticate(req, res, next) {
+    //captura o token que vem no header
     const token = req.headers.authorization?.split(' ')[1];
     
+    //valida se o token existe
     if (!token) {
       return res.status(401).json({ error: 'Token não fornecido' });
     }
     
     try {
+      //verica se o token foi gerado por este servidor
+      //validando a palavra chave
       const decoded = verifyToken(token);
       req.userId = decoded.id;
       next();
