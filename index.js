@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
 const app = express();
 const PORT = 8080;
 
@@ -9,13 +10,29 @@ const PORT = 8080;
 app.use(express.json());
 app.use(cors());
 
+//storage do multer
+//configuração necessária para saber onde o arquivo temporário
+//ficará salvo no servidor
+var storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'imagens')
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.fieldname + '-' + Date.now())
+  }
+});
+
+//criação do objeto multer que faz 
+//com que seja possível ler o arquivo que vem do frontend
+const upload = multer({ storage });
+
 //importante o modulo de mysql
 var mysql = require('mysql2');
 
 //criando a variável conn que vai ter a referência de conexão
 //com o banco de dados
 var conn = mysql.createConnection({
-    host: "127.0.0.1",
+    host: "localhost",
     user: "root",
     password: "",
     database: "phpmyadmin",
@@ -30,7 +47,7 @@ conn.connect(function (err) {
 });
 
 const generateToken = (id, email) => {
-    return jwt.sign({ id: id, email: email }, 'meusegredoabc', {
+    return jwt.sign({ id: id, email: email, permissoes: ['USUARIO','PRODUTO'] }, 'meusegredoabc', {
         expiresIn: '1h'
     });
 };
@@ -41,12 +58,12 @@ const verifyToken = (token) => {
 
 app.post('/api/login', function (req, res) {
     let usuario = req.body;
-    let sql = "SELECT u.id, u.senha FROM usuario u where u.email = ${usuario.email}";
+    let sql = `SELECT u.id, u.senha FROM usuario u where u.email = '${usuario.email}'`;
 
     conn.query(sql, function (err, result) {
         if (err) throw err; 
-        usuario.id = result[0].id;
-        usuario.senha = result[0].senha;       
+        usuario.id = result[0]?.id;
+        usuario.senha = result[0]?.senha;       
     });
 
     //TODO validar se encontrou o usuário
@@ -128,6 +145,13 @@ app.get('/api/usuario/:id', (req, res) => {
         console.log(result)
         res.status(200).json(result[0]);
     });
+});
+
+//método para upload de arquivo
+//chama o upload.single para capturar o arquivo que veio do front
+app.post('/api/upload', upload.single('file'), function (req, res) {
+    console.log(req.file);
+    res.send('foi')
 });
 
 app.listen(PORT, function (err) {
