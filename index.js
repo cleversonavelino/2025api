@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
+const fs = require('fs');
 const app = express();
 const PORT = 8080;
 
@@ -152,6 +153,31 @@ app.get('/api/usuario/:id', (req, res) => {
 app.post('/api/upload', upload.single('file'), function (req, res) {
     console.log(req.file);
     res.send('foi')
+});
+
+app.get('/api/image', function(req,res) {
+    console.log('chegou o request');
+
+    //caminho da imagem salva
+    var caminhoArquivo = "C:\\Users\\CleversonAvelinoFerr\\aulapuc\\2025api\\imagens\\file-1747265484319";
+
+    // Configura os headers apropriados
+    res.setHeader('Content-Disposition', `attachment; filename=Captura de tela 2024-08-23 080725.png`);
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Length', 13269);
+
+    // Cria um stream do arquivo e envia para o cliente
+    const fileStream = fs.createReadStream(caminhoArquivo);
+    fileStream.pipe(res);
+
+    // Trata erros no stream
+    fileStream.on('error', (err) => {
+      console.error('Erro no stream:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Erro ao enviar o arquivo' });
+      }
+    });
+
 });
 
 app.listen(PORT, function (err) {
